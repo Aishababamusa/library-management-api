@@ -2,6 +2,7 @@ const express = require('express');
 const { pgPool, connectMongoDB } = require('./src/config/database');
 const reviewRoutes = require('./src/routes/reviewRoutes');
 const bookRoutes = require('./src/routes/bookRoutes');
+const userRoutes = require('./src/routes/userRoutes');
 
 
 const app = express();
@@ -11,7 +12,7 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use('/api/reviews', reviewRoutes)
 app.use('/api/books', bookRoutes )
-
+app.use('/api/users', userRoutes)
 // Test route
 app.get('/', (req, res) => {
   res.json({ message: 'Library Management API is running!' });
