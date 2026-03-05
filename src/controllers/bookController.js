@@ -1,5 +1,5 @@
 
-// Import what you need - what do you think you need here?
+
 const {pgPool} = require('../config/database');
 // Create a new book
 exports.createBook = async (req, res) => {
@@ -62,7 +62,6 @@ exports.getAllBooks = async (req, res) => {
 // Get book by ID
 exports.getBookById = async (req, res) => {
   try {
-    // We'll fill this in
     const {id} = req.params;
     const query = 'SELECT * FROM books WHERE id = $1'
     const result = await pgPool.query(query, [id]);
