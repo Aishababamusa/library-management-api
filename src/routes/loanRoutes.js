@@ -1,18 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const loanController = require('../controllers/loanController');
-//GET all loans (admin)
-router.get('/', loanController.getAllLoans);
+const { authenticateToken, isAdmin } = require('../middleware/authMiddleware');
 
-//GET active loans
-router.get('/active', loanController.getActiveLoans);
+// Admin-only routes
+router.get('/', authenticateToken, isAdmin, loanController.getAllLoans);
+router.get('/active', authenticateToken, isAdmin, loanController.getActiveLoans);
 
-//GET loans by ID
-router.get('/:id', loanController.getLoansByUser);
+// Authenticated user routes
+router.get('/user/:user_id', authenticateToken, loanController.getLoansByUser);
+router.post('/borrow', authenticateToken, loanController.borrowBook);
+router.put('/return/:id', authenticateToken, loanController.returnBook);
 
-//borrow a book
-router.post('/borrow', loanController.borrowBook);
-
-//return book
-router.put('/return/:id', loanController.returnBook);
 module.exports = router;

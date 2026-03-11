@@ -1,14 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
+const { authenticateToken, isAdmin } = require('../middleware/authMiddleware');
 
-router.post('/', userController.createUser);
+// Public routes
+router.post('/login', userController.login);
+router.post('/', userController.createUser);  
 
-router.get('/', userController.getAllUsers);
+// Admin-only routes
+router.get('/', authenticateToken, isAdmin, userController.getAllUsers);
+router.delete('/:id', authenticateToken, isAdmin, userController.deleteUser);
 
-router.get('/:id', userController.getUserById);
+// Authenticated routes (logged in users)
+router.get('/:id', authenticateToken, userController.getUserById);
+router.put('/:id', authenticateToken, userController.updateUser);
 
-router.put('/:id', userController.updateUser);
-
-router.delete('/:id', userController.deleteUser);
 module.exports = router;

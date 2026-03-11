@@ -2,6 +2,7 @@
 // What do you need to import here?
 const { pgPool } = require('../config/database');
 const bcrypt = require('bcrypt');  // Add this
+const jwt = require('jsonwebtoken');
 
 //create user (register)
 exports.createUser = async (req, res) => {
@@ -135,6 +136,54 @@ exports.deleteUser = async (req, res) => {
         user: result.rows[0]
 
     })
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+// Login user
+exports.login = async (req, res) => {
+  try {
+    // 1. Get email and password from request body
+    const { email, password } = req.body;
+    
+    // 2. Find user by email
+  const userQuery =  `SELECT * FROM users WHERE email = $1`;
+  const userResult = await pgPool.query(userQuery, [email]);
+  
+    
+    // 3. Check if user exists
+    if (userResult.rows.length === 0){ 
+      return res.status(401).json({
+        success: false,
+        message: "Invalid Credentials"
+      })
+     } 
+     const user = userResult.rows[0];
+    
+    // 4. Compare password with hash
+     const isValidPassword = await bcrypt.compare(password, user.password_hash);
+    if (!isValidPassword) { 
+      return res.status(401).json({
+        success: false,
+        message: "Invalid Credentials"
+      }) }
+    
+    // 5. Create JWT token
+    const token = jwt.sign({ user_id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    
+    // 6. Send response with token
+return res.status(200).json({
+  success: true,
+  message: "Login successful",
+  token: token,
+  user: {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role
+  }
+});
+    
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
