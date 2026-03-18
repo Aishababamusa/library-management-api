@@ -1,6 +1,8 @@
 
 
 const {pgPool} = require('../config/database');
+const Review = require('../models/Reviews');
+
 // Create a new book
 exports.createBook = async (req, res) => {
    try {
@@ -141,6 +143,95 @@ exports.deleteBook = async (req, res) => {
       message: "Book deleted successfully",
       books: result.rows[0]
     })
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.searchBooks = async (req, res) => {
+  try {
+    const { title, author, genre, available } = req.query;
+    
+    // Start with base query
+    let query = 'SELECT * FROM books WHERE 1=1';
+    const values = [];
+    let paramCount = 1;
+    
+    // Add conditions dynamically
+    if (title) {
+      query += ` AND title ILIKE $${paramCount}`;
+      values.push(`%${title}%`);  // Wrap in % for partial match
+      paramCount++;
+    }
+    
+    if (author) {
+      query += ` AND author ILIKE $${paramCount}`;
+      values.push(`%${author}%`);
+      paramCount++;
+    }
+    
+    if (genre) {
+      query += ` AND genre = $${paramCount}`;  // Exact match for genre
+      values.push(genre);
+      paramCount++;
+    }
+    
+    if (available === 'true') {
+      query += ` AND available_quantity > 0`;
+    }
+    
+    // Execute query
+    const result = await pgPool.query(query, values);
+    
+    // Return results
+    return res.status(200).json({
+      success: true,
+      count: result.rows.length,
+      books: result.rows
+    });
+    
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+exports.getBookWithReviews = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Step 1: Get book from PostgreSQL
+    const query = `SELECT * FROM books WHERE id = $1`;
+    const result = await pgPool.query(query, [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: `Book with ID ${id} not found`
+      });
+    }
+
+    const book = result.rows[0];
+    
+    // Step 2: Get reviews from MongoDB
+    const reviews = await Review.find({ book_id: id });
+    
+    // Step 3: Calculate average rating
+    let averageRating = 0;
+    if (reviews.length > 0) {
+      const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
+      averageRating = (totalRating / reviews.length).toFixed(1);
+    }
+    
+    // Step 4: Combine and return
+    return res.status(200).json({
+      success: true,
+      data: {
+        book,
+        reviews,
+        averageRating,
+        totalReviews: reviews.length
+      }
+    });
+    
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

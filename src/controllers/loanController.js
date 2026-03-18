@@ -251,3 +251,35 @@ return res.status(200).json({
   }
 };
   
+exports.getOverdueLoans = async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        loans.id,
+        loans.borrowed_date,
+        loans.due_date,
+        loans.return_date,
+        loans.status,
+        users.name as user_name,
+        users.email as user_email,
+        books.title as book_title,
+        books.author as book_author
+      FROM loans
+      JOIN users ON loans.user_id = users.id
+      JOIN books ON loans.book_id = books.id
+      WHERE loans.status = 'active' AND loans.due_date < CURRENT_DATE
+      ORDER BY loans.due_date ASC
+    `;
+    
+    const result = await pgPool.query(query);
+    
+    return res.status(200).json({
+      success: true,
+      count: result.rows.length,
+      overdueLoans: result.rows
+    });
+    
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
